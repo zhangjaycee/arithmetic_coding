@@ -28,40 +28,7 @@ unsigned char index_to_char[No_of_symbols+1]; /* To character from index    */
 /*   2^14 - 1                       */
 int cum_freq[No_of_symbols+1];          /* Cumulative symbol frequencies    */
 
-//固定频率表，为了方便起见
-int freq[No_of_symbols+1] = {
-    0,
-    1,   1,   1,   1,   1,   1,   1,   1,   1,   1, 124,   1,   1,   1,   1,   1,
-    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
-
-    /*      !    "    #    $    %    &    '    (    )    *    +    ,    -    .    / */
-    1236,   1, 21,   9,   3,   1, 25, 15,   2,   2,   2,   1, 79, 19, 60,   1,
-
-    /* 0    1    2    3    4    5    6    7    8    9    :    ;    <    =    >    ? */
-    15, 15,   8,   5,   4,   7,   5,   4,   4,   6,   3,   2,   1,   1,   1,   1,
-
-    /* @    A    B    C    D    E    F    G    H    I    J    K    L    M    N    O */
-    1, 24, 15, 22, 12, 15, 10,   9, 16, 16,   8,   6, 12, 23, 13, 11,
-
-    /* P    Q    R    S    T    U    V    W    X    Y    Z    [    /    ]    ^    _ */
-    14,   1, 14, 28, 29,   6,   3, 11,   1,   3,   1,   1,   1,   1,   1,   3,
-
-    /* '    a    b    c    d    e    f    g    h    i    j    k    l    m    n    o */
-    1, 491, 85, 173, 232, 744, 127, 110, 293, 418,   6, 39, 250, 139, 429, 446,
-
-    /* p    q    r    s    t    u    v    w    x    y    z    {    |    }    ~      */
-    111,   5, 388, 375, 531, 152, 57, 97, 12, 101,   5,   2,   1,   2,   3,   1,
-
-    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
-    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
-    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
-    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
-    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
-    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
-    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
-    1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
-    1
-};
+int freq[No_of_symbols+1] = {0};
 
 //用来存储编码值，是编码解码过程的桥梁。大小暂定１００，实际中可以修改
 char code[100000];
@@ -79,12 +46,13 @@ FILE *fp_encode;
 //启用字符频率统计模型，也就是计算各个字符的频率分布区间
 void start_model(){
     int i;
-    for (i = 0; i<No_of_chars; i++) {          
+    /*
+    for (int i = 0; i<No_of_chars; i++) {          
         //为了便于查找
         char_to_index[i] = i+1;                
         index_to_char[i+1] = i;                
     }
-
+    */
     //累计频率cum_freq[i-1]=freq[i]+...+freq[257], cum_freq[257]=0;
     cum_freq[No_of_symbols] = 0;
     for (i = No_of_symbols; i>0; i--) {       
@@ -202,12 +170,37 @@ static void bit_plus_follow(int bit)
 
 
 
+void  convert_index()
+{
+    for (int i = 0; i<No_of_chars; i++) {          
+        //为了便于查找
+        char_to_index[i] = i+1;                
+        index_to_char[i+1] = i;                
+    }
+}
 void encode(){
-    start_model();                             /* Set up other modules.     */
+    convert_index();
     start_outputing_bits();
     start_encoding();
+    for(int i = 1; i < No_of_symbols + 1; i++){
+        freq[i] = 1;
+    }
     for (;;) {                                 /* Loop through characters. */
-        int ch; 
+        int ch;
+        int symbol;
+        ch = fgetc(fp_in);                    /* Read the next character. */
+        if(ch == EOF)
+            break;
+        symbol = char_to_index[ch];            /* Translate to an index.    */
+        freq[symbol] += 1;
+    }
+    for(int i = 0; i < No_of_symbols + 1; i++){
+        printf("freq[%d] = %d\n", i, freq[i]);
+    }
+    start_model();                             /* Set up other modules.     */
+    fseek(fp_in, 0, SEEK_SET);
+    for (;;) {                                 /* Loop through characters. */
+        int ch;
         int symbol;
         ch = fgetc(fp_in);                     /* Read the next character. */
         if(ch == EOF)
