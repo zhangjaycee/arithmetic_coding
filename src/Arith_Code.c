@@ -46,13 +46,23 @@ FILE *fp_encode;
 //启用字符频率统计模型，也就是计算各个字符的频率分布区间
 void start_model(){
     int i;
-    /*
-    for (int i = 0; i<No_of_chars; i++) {          
-        //为了便于查找
-        char_to_index[i] = i+1;                
-        index_to_char[i+1] = i;                
+    for(int i = 1; i < No_of_symbols + 1; i++){
+        freq[i] = 1;
     }
-    */
+    for (;;) {                                 /* Loop through characters. */
+        int ch;
+        int symbol;
+        ch = fgetc(fp_in);                    /* Read the next character. */
+        if(ch == EOF)
+            break;
+        symbol = char_to_index[ch];            /* Translate to an index.    */
+        freq[symbol] += 1;
+    }
+
+    for(int i = 1; i < No_of_symbols + 1; i++){
+        fwrite(&freq[i], 1, 1, fp_encode);
+        //printf("freq[%d] = %d\n", i, freq[i]);
+    }
     //累计频率cum_freq[i-1]=freq[i]+...+freq[257], cum_freq[257]=0;
     cum_freq[No_of_symbols] = 0;
     for (i = No_of_symbols; i>0; i--) {       
@@ -182,21 +192,6 @@ void encode(){
     convert_index();
     start_outputing_bits();
     start_encoding();
-    for(int i = 1; i < No_of_symbols + 1; i++){
-        freq[i] = 1;
-    }
-    for (;;) {                                 /* Loop through characters. */
-        int ch;
-        int symbol;
-        ch = fgetc(fp_in);                    /* Read the next character. */
-        if(ch == EOF)
-            break;
-        symbol = char_to_index[ch];            /* Translate to an index.    */
-        freq[symbol] += 1;
-    }
-    for(int i = 0; i < No_of_symbols + 1; i++){
-        printf("freq[%d] = %d\n", i, freq[i]);
-    }
     start_model();                             /* Set up other modules.     */
     fseek(fp_in, 0, SEEK_SET);
     for (;;) {                                 /* Loop through characters. */
