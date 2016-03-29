@@ -29,6 +29,7 @@ int main()
     char filename_encode[60];
     char filename_decode[60];
     int filename_len = -1;
+    printf("===13020188003  张佳辰  数据压缩大作业1---算数编码(二进制)解压缩程序===\n");
     printf("please enter the filenname you want to decode:\n");
     scanf("%s",filename_encode);
     filename_len = check_filename(filename_encode);
@@ -41,12 +42,20 @@ int main()
     filename_decode[0] = '\0';
     strcat(filename_decode, filename_encode);
     strcat(filename_decode,"_decode.txt");
+    strcat(filename_encode,".txt");
     if(NULL == (fp_decode = fopen(filename_decode, "w"))){
         printf("create failed!\n");
         exit(-1);
     }
     decode();
-    printf("Done!\n");
+    fseek (fp_encode, 0, SEEK_END); 
+    fseek (fp_decode, 0, SEEK_END);  
+    int size0=ftell (fp_encode);
+    int size1=ftell (fp_decode);
+    printf ("解压前文件%s: \t\t%d bytes.\n", filename_encode, size0);
+    printf ("解压后文件%s: \t%d bytes.\n", filename_decode, size1);
+    printf("压缩率为:\t\t\t %.2f%%\n",(float)size0/size1*100);
+    printf("===13020188003  张佳辰  数据压缩大作业1---算数编码(二进制)解压缩程序===\n");
     fclose(fp_decode); 
     fclose(fp_encode); 
 
