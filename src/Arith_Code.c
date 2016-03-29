@@ -141,26 +141,19 @@ typedef unsigned int  code_value;                /* Type of an arithmetic code v
             l = l + (range*cum_freq[symbol])/cum_freq[0]; /* symbol.                  */
             for (;;)
             {                                  /* Loop to output bits.     */
-                if(l>u)
-                        exit(-1);
-
-                if ((u | 0x7fff) == 0x7fff) { //u<Half
-                    bit_plus_foll(0);
-                }
-                   
-                else if ((l & 0x8000) == 0x8000) {//else if (l>=Half) 
-                    bit_plus_foll(1);
-                    l -= Half;
-                    u -= Half;                       /* Subtract offset to top. */
+                if ((u & 0x8000 ) == (l & 0x8000)) { //u<Half
+                    bit_plus_foll((u & 0x8000) == 0x8000);
+                    l = l << 1;
+                    u = (u << 1) + 1;
                 }
                 else if (l>=First_qtr  && u<Third_qtr) {  /* Output an opposite bit　later if in middle half. */
-                        bits_to_foll += 1;
-                        l -= First_qtr;                   /* Subtract offset to middle*/
-                        u -= First_qtr;
+                    bits_to_foll += 1;
+                    l -= First_qtr;                   /* Subtract offset to middle*/
+                    u -= First_qtr;
+                    l = l << 1;
+                    u = (u << 1) + 1;                        /* Scale up code range.     */
                 }
                 else break;                             /* Otherwise exit loop.     */
-                l = l << 1;
-                u = (u << 1) + 1;                        /* Scale up code range.     */
             }
         }
 
@@ -176,6 +169,7 @@ typedef unsigned int  code_value;                /* Type of an arithmetic code v
 
 static void bit_plus_foll(int bit)
 {  
+    printf("%d\n", bit);
     output_bit(bit);                           /* Output the bit.           */
     while (bits_to_foll>0) {
         output_bit(!bit);                      /* Output bits_to_foll     */
