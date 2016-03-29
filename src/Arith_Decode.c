@@ -2,16 +2,16 @@
 #include<stdlib.h>
 #include<string.h>
 
-#define CODE_BITS 16              /* Number of bits in a code value   */
-#define MAX_VALUE 0xffff      /* Largest code value */
+#define CODE_BITS 16   
+#define MAX_VALUE 0xffff      
 #define No_of_chars 256                 //ascii一共有256种字符
 #define EOF_symbol (No_of_chars+1)      //No_of_chars没有查到字符，则说明是EOF
 #define No_of_symbols (No_of_chars+1)   // 总可读字符数
-typedef unsigned int code_t;                /* Type of an arithmetic code value */
-code_t l, u, value;
+typedef unsigned int code_t;           
+code_t l, u, value, range;
 int char_to_index[No_of_chars];         //用于查询字符转为索引数字的表
 unsigned char index_to_char[No_of_symbols+1]; //用于查询索引数字转为字符的表
-int cum_freq[No_of_symbols+1];          /* Cumulative symbol frequencies    */
+int cum_freq[No_of_symbols+1];      
 int freq[No_of_symbols+1] = {0};
 int buffer;      
 int bits_to_go;        
@@ -60,6 +60,7 @@ void init(){
         char_to_index[i] = i+1;                
         index_to_char[i+1] = i;                
     }
+    //读入字符频率
     for(i = 1; i < No_of_symbols + 1; i++){
         fread(&freq[i], 1, 1, fp_encode);
     }
@@ -68,7 +69,7 @@ void init(){
     for (i = No_of_symbols; i>0; i--) {       
         cum_freq[i-1] = cum_freq[i] + freq[i]; 
     }
-    bits_to_go = 0;                             /* Buffer starts out with   */
+    bits_to_go = 0;
     value = 0;  
     for (i = 1; i<=CODE_BITS; i++) {  
         value = ((value << 1) + input_bit()) & MAX_VALUE;// 读取下一位 
@@ -93,14 +94,11 @@ int input_bit()
 
 int decode_symbol()
 {   
-    code_t range;
     int cum;
     int symbol;
     range = (code_t)(u-l)+1;
     cum = (((code_t)(value-l)+1)*cum_freq[0]-1)/range;
     for (symbol = 1; cum_freq[symbol]>cum; symbol++) ; // 确定是哪个字符
-    u = l + (range*cum_freq[symbol-1])/cum_freq[0]-1; 
-    l = l +  (range*cum_freq[symbol])/cum_freq[0];
     return symbol;
 }
 
@@ -114,6 +112,8 @@ void decode(){
             break; //读到EOF，解码完成 
         ch = index_to_char[symbol];//索引转换成字符
         fputc(ch,fp_decode); //将解码结果写入到文件
+        u = l + (range*cum_freq[symbol-1])/cum_freq[0]-1; 
+        l = l +  (range*cum_freq[symbol])/cum_freq[0];
         for(;;){  //调整映射范围                                
             if ((u & 0x8000 ) == (l & 0x8000)) { //e1和e2条件
                 l = (l << 1) & MAX_VALUE;
