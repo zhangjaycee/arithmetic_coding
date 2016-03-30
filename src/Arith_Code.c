@@ -5,7 +5,7 @@
 
 #define CODE_BITS 16              
 #define MAX_VALUE 0xffff      
-#define No_of_chars 256                 //ascii一共有256种字符
+#define No_of_chars 256                 //8位2进制一共有256种组合
 #define EOF_symbol (No_of_chars+1)      //No_of_chars没有查到字符，则说明是EOF
 #define No_of_symbols (No_of_chars+1)   // 总可读字符数
 typedef unsigned int code_t;               
