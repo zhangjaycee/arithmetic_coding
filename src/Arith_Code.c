@@ -94,7 +94,7 @@ void init(){
     }
 
     for(int i = 1; i < No_of_symbols + 1; i++){
-        fwrite(&freq[i], 1, 1, fp_encode);
+        fwrite(&freq[i], 4, 1, fp_encode);
     }
     cum_freq[No_of_symbols] = 0;
     for (i = No_of_symbols; i>0; i--) {       

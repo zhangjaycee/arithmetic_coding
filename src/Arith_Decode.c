@@ -2,7 +2,7 @@
 #include<stdlib.h>
 #include<string.h>
 
-#define CODE_BITS 16   
+#define CODE_BITS 16
 #define MAX_VALUE 0xffff      
 #define No_of_chars 256                 //ascii一共有256种字符
 #define EOF_symbol (No_of_chars+1)      //No_of_chars没有查到字符，则说明是EOF
@@ -71,7 +71,7 @@ void init(){
     }
     //读入字符频率
     for(i = 1; i < No_of_symbols + 1; i++){
-        fread(&freq[i], 1, 1, fp_encode);
+        fread(&freq[i], 4, 1, fp_encode);
     }
     //计算cum_freq数组
     cum_freq[No_of_symbols] = 0;
@@ -91,6 +91,9 @@ int input_bit()
 {   
     int t;
     if (bits_to_go==0) {   
+        if(buffer == EOF){
+                return EOF_symbol;
+        }
         fread(&buffer,1,1,fp_encode);
         bits_to_go = 8;
     }
