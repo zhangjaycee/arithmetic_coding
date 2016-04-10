@@ -30,12 +30,13 @@ void output_bit(int bit);
 void encode();
 void encode_symbol(int symbol,int cum_freq[]);
 void done_encoding();
-int check_filename(char * name);
+void check_filename(char * name);
+
+char filename_in[40];
+char filename_encode[60];
 
 int main()
 {
-    char filename_in[40];
-    char filename_encode[60];
     int filename_len = -1;
     printf("===13020188003  张佳辰  数据压缩大作业1---算术编码(二进制)压缩程序===\n");
     //提示输入文件
@@ -43,21 +44,13 @@ int main()
    // scanf("%d",&base);
     printf("Please enter filename you want to encode:\n");
     scanf("%s",filename_in);
-    filename_len = check_filename(filename_in);
+    filename_len = strlen(filename_in);
     while(filename_len < 0 || (fp_in = fopen(filename_in,"r")) == NULL){
         printf("Open failed, please try again:\n");
         scanf("%s",filename_in);
-        filename_len = check_filename(filename_in);
+        filename_len = strlen(filename_in);
     }
-    filename_in[filename_len] = '\0';
-    filename_encode[0] = '\0';
-    strcat(filename_encode, filename_in);
-    strcat(filename_encode,"_encode.raw");
-    strcat(filename_in,".raw");
-    if(NULL == (fp_encode = fopen(filename_encode, "w"))){
-        printf("encode file create failed!\n");
-        exit(-1);
-    }
+    check_filename(filename_in);
     //压缩
     encode();
     //计算文件大小
@@ -66,7 +59,7 @@ int main()
     int size0=ftell (fp_in);
     int size1=ftell (fp_encode);
     printf ("压缩前文件%s: \t\t%d bytes.\n", filename_in, size0);
-    printf ("压缩后文件%s: \t%d bytes.\n", filename_encode, size1);
+    printf ("压缩后文件%s: \t\t%d bytes.\n", filename_encode, size1);
     printf("压缩率为:\t\t\t %.2f%%\n",(float)size1/size0*100);
     fclose(fp_encode); 
     fclose(fp_in); 
@@ -93,15 +86,10 @@ void init(){
     }
     int count = 0;
     for (int i = 0; i < size; i++) {  
-            //printf("[i]%d\n", i);
         count++;
-        //printf("initing... %d\n", count);
         unsigned char ch;
         int symbol;
-        //ch = fgetc(fp_in); 
         fread(&ch, 1, 1, fp_in);
-        //if(ch == EOF)
-        //   break;
         symbol = char_to_index[ch]; 
         freq[symbol] += 1;
     }
@@ -113,7 +101,6 @@ void init(){
     cum_freq[No_of_symbols] = 0;
     for (i = No_of_symbols; i>0; i--) {       
         cum_freq[i-1] = cum_freq[i] + freq[i]; 
-        //printf("cum_freq[%d]=%d\n", i-1, cum_freq[i-1]);
     }
     buffer = 0;   //缓冲区开始为空
     bits_to_go = 8;                          
@@ -131,7 +118,6 @@ void output_bit(int bit)
     bits_to_go -= 1;
     //当缓冲区满了的时候输出
     if (bits_to_go<=0) {                        
-        //printf("bbb\n");
         fwrite(&buffer, 1, 1, fp_encode);
         bits_to_go = 8; //缓冲区剩余位数恢复为8
     }
@@ -149,14 +135,12 @@ void encode_symbol(int symbol,int cum_freq[])
     for (;;)
     {                                  
         if ((u & 0x8000 ) == (l & 0x8000)) { 
-            //printf("aaa\n");
             output((l & 0x8000) == 0x8000);
             l = (l << 1) & MAX_VALUE;
             u = ((u << 1) + 1) &MAX_VALUE ;
         }
         else if ((u & 0x8000)==0x8000 && (u & MAX_VALUE | 0xbfff)==0xbfff
                 && (l & MAX_VALUE | 0x7fff)==0x7fff && (l & 0x4000)==0x4000 ) {
-            //printf("aaa\n");
             scale3 += 1;
             l = (l << 1) & MAX_VALUE;
             u = ((u << 1) + 1) &MAX_VALUE ;
@@ -192,31 +176,77 @@ void output(int bit)
 
 void encode(){
     init(); 
-    //printf("init ok\n");
     fseek(fp_in, 0, SEEK_SET);
     for (int i = 0; i < size; i++) {  
+        printf("\r[");
+        int count = 0;
+        for(int j = 0; j < i; j+=size/50){
+            printf("#");
+            count ++;
+        }
+        while(count++ < 50){
+            printf(".");
+        }
+        printf(" %5.2f%% ]",(float)i/size*100);
         unsigned char ch;
         int symbol;
-        //ch = fgetc(fp_in); 
         fread(&ch, 1, 1, fp_in);
-      //  if(ch == EOF)
-      //      break;
         symbol = char_to_index[ch]; 
         encode_symbol(symbol,cum_freq);
-    //    if(symbol < 40) 
-    //    {printf("[%d] [bits_to_go]%d [l]%lld [u]%lld [ch]%c [symbol]%d\n", i, bits_to_go,l,u,ch,symbol);}
     }
+        printf("\r[");
+    for(int j = 0; j < 50; j++){
+        printf("#");
+    }
+    printf(" 100.00%% ]\n");
     //将EOF编码进去，作为终止符
     //encode_symbol(EOF_symbol,cum_freq);       
     done_encoding(); //编码结束将最后不满的缓冲区写入
 }
 
-int check_filename(char * name)
+void check_filename(char * name)
 {
     int len = strlen(name);
-    if(len < 5 || name[len-1] != 'w' || name[len-2] != 'a' || name[len-3] != 'r' || name[len-4] != '.')
-        return -1;
-    else
-        return len - 4;
+    int flag = 0;
+    int i;
+    // encode_file name: xxxx.abc  -->   xxxx.zjc   start[4.abc....
+    //                   xxxx      -->   xxxx.zjc   start[0........
+    for(i = len; i > 0; i--){
+        if(name[i] == '.'){
+            flag = 1;
+            break;
+        }
+    }
+    strcat(filename_encode, name);
+    if(flag){
+        for(int j = 0; j < i; j++){
+            filename_in[j] = name[j];
+        }
+        filename_encode[i]='.';
+        filename_encode[i+1]='j';
+        filename_encode[i+2]='c';
+        filename_encode[i+3]='z';
+        filename_encode[i+4]='\0';
+        if(NULL == (fp_encode = fopen(filename_encode, "w"))){
+            printf("encode file create failed!\n");
+            exit(-1);
+        }
+        fputc('0'+len-i, fp_encode);
+        for(int j = i; j < len; j++){
+            fwrite(&name[j], 1, 1, fp_encode);
+        }
+    }else{
+        filename_encode[len]='.';
+        filename_encode[len+1]='j';
+        filename_encode[len+2]='c';
+        filename_encode[len+3]='z';
+        filename_encode[len+4]='\0';
+        if(NULL == (fp_encode = fopen(filename_encode, "w"))){
+            printf("encode file create failed!\n");
+            exit(-1);
+        }
+        fputc('0', fp_encode);
+    }
+
 }
 

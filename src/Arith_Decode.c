@@ -23,31 +23,23 @@ void init();
 int input_bit();
 void decode();
 int decode_symbol();
-int check_filename(char *);
+void check_filename(char *);
+char filename_encode[60];
+char filename_decode[60];
 
 int main()
 {
-    char filename_encode[60];
-    char filename_decode[60];
     int filename_len = -1;
     printf("===13020188003  张佳辰  数据压缩大作业1---算术编码(二进制)解压缩程序===\n");
     printf("please enter the filenname you want to decode:\n");
     scanf("%s",filename_encode);
-    filename_len = check_filename(filename_encode);
+    filename_len = strlen(filename_encode);
     while(filename_len < 0 || (fp_encode = fopen(filename_encode,"r")) == NULL){
         printf("open failed, try again!\n");
         scanf("%s",filename_encode);
-        filename_len = check_filename(filename_encode);
+        filename_len = strlen(filename_encode);
     }
-    filename_encode[filename_len] = '\0';
-    filename_decode[0] = '\0';
-    strcat(filename_decode, filename_encode);
-    strcat(filename_decode,"_decode.raw");
-    strcat(filename_encode,".raw");
-    if(NULL == (fp_decode = fopen(filename_decode, "w"))){
-        printf("create failed!\n");
-        exit(-1);
-    }
+    check_filename(filename_encode);
     decode();
     fseek (fp_encode, 0, SEEK_END); 
     fseek (fp_decode, 0, SEEK_END);  
@@ -121,6 +113,16 @@ void decode(){
     int symbol;
     init(); //解码前的一些初始化
     for(int i = 0; i< size; i++){ //开始循环解码
+	printf("\r[");
+        int count = 0;
+        for(int j = 0; j < i; j+=size/50){
+            printf("#");
+            count ++;
+        }
+        while(count++ < 50){
+            printf(".");
+        }
+        printf(" %5.2f%% ]",(float)i/size*100);
         symbol = decode_symbol();
         //if (symbol==EOF_symbol) 
         //    break; //读到EOF，解码完成 
@@ -147,17 +149,29 @@ void decode(){
             else break;
         }
     }
+    printf("\r[");
+    for(int j = 0; j < 50; j++){
+        printf("#");
+    }
+    printf(" 100.00%% ]\n");
 }
 
-int check_filename(char * name)
+void check_filename(char * name)
 {
     int len = strlen(name);
-    if(len < 12){
-        return -1;
+    strcat(filename_decode, name);
+    filename_decode[len -4] = '\0';
+    strcat(filename_decode, "_decode");
+    char suffix_len;
+    suffix_len = fgetc(fp_encode);
+    suffix_len -= '0';
+    int i;
+    for(i = 0; i < suffix_len; i++){
+        filename_decode[len+3+i] = fgetc(fp_encode);
     }
-    if(0 != strcmp(name + len - 11, "_encode.raw")){
-        return -1;
+    filename_decode[len+3+i] = '\0';
+    if(NULL == (fp_decode = fopen(filename_decode, "w"))){
+        printf("create failed!\n");
+        exit(-1);
     }
-    else
-        return len - 11;
 }
