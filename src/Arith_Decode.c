@@ -7,13 +7,14 @@
 #define No_of_chars 256                 //8位二进制一共有256种组合
 #define EOF_symbol (No_of_chars+1)      //No_of_chars没有查到字符，则说明是EOF
 #define No_of_symbols (No_of_chars+1)   // 总可读字符数
-typedef unsigned int code_t;           
+typedef long long code_t;           
 code_t l, u, value, range;
 int char_to_index[No_of_chars];         //用于查询字符转为索引数字的表
 unsigned char index_to_char[No_of_symbols+1]; //用于查询索引数字转为字符的表
 int cum_freq[No_of_symbols+1];      
 int freq[No_of_symbols+1] = {0};
 int buffer;      
+int size;
 int bits_to_go;        
 FILE *fp_encode;
 FILE *fp_decode;
@@ -29,7 +30,7 @@ int main()
     char filename_encode[60];
     char filename_decode[60];
     int filename_len = -1;
-    printf("===13020188003  张佳辰  数据压缩大作业1---算数编码(二进制)解压缩程序===\n");
+    printf("===13020188003  张佳辰  数据压缩大作业1---算术编码(二进制)解压缩程序===\n");
     printf("please enter the filenname you want to decode:\n");
     scanf("%s",filename_encode);
     filename_len = check_filename(filename_encode);
@@ -41,8 +42,8 @@ int main()
     filename_encode[filename_len] = '\0';
     filename_decode[0] = '\0';
     strcat(filename_decode, filename_encode);
-    strcat(filename_decode,"_decode.txt");
-    strcat(filename_encode,".txt");
+    strcat(filename_decode,"_decode.raw");
+    strcat(filename_encode,".raw");
     if(NULL == (fp_decode = fopen(filename_decode, "w"))){
         printf("create failed!\n");
         exit(-1);
@@ -55,7 +56,7 @@ int main()
     printf ("解压前文件%s: \t\t%d bytes.\n", filename_encode, size0);
     printf ("解压后文件%s: \t%d bytes.\n", filename_decode, size1);
     printf("压缩率为:\t\t\t %.2f%%\n",(float)size0/size1*100);
-    printf("===13020188003  张佳辰  数据压缩大作业1---算数编码(二进制)解压缩程序===\n");
+    printf("===13020188003  张佳辰  数据压缩大作业1---算术编码(二进制)解压缩程序===\n");
     fclose(fp_decode); 
     fclose(fp_encode); 
 
@@ -65,6 +66,7 @@ int main()
 
 void init(){
     int i;
+    fread(&size, 4, 1, fp_encode);
     for (i = 0; i<No_of_chars; i++) {          
         char_to_index[i] = i+1;                
         index_to_char[i+1] = i;                
@@ -115,15 +117,16 @@ int decode_symbol()
 }
 
 void decode(){
-    int ch; 
+    unsigned char ch; 
     int symbol;
     init(); //解码前的一些初始化
-    for (;;){ //开始循环解码
+    for(int i = 0; i< size; i++){ //开始循环解码
         symbol = decode_symbol();
-        if (symbol==EOF_symbol) 
-            break; //读到EOF，解码完成 
+        //if (symbol==EOF_symbol) 
+        //    break; //读到EOF，解码完成 
         ch = index_to_char[symbol];//索引转换成字符
-        fputc(ch,fp_decode); //将解码结果写入到文件
+        //fputc(ch,fp_decode); //将解码结果写入到文件
+        fwrite(&ch, 1, 1, fp_decode);
         u = l + (range*cum_freq[symbol-1])/cum_freq[0]-1; 
         l = l +  (range*cum_freq[symbol])/cum_freq[0];
         for(;;){  //调整映射范围                                
@@ -152,7 +155,7 @@ int check_filename(char * name)
     if(len < 12){
         return -1;
     }
-    if(0 != strcmp(name + len - 11, "_encode.txt")){
+    if(0 != strcmp(name + len - 11, "_encode.raw")){
         return -1;
     }
     else
